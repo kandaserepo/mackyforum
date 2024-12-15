@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MackyForum!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #messages {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .message {
+            border-bottom: 1px solid #eee;
+            padding: 5px 0;
+        }
+        .nickname {
+            font-weight: bold;
+        }
+        .timestamp {
+            font-size: small;
+            color: gray;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<h1>MackyForum!</h1>
+
+<input type="text" id="nicknameInput" placeholder="Введите ваш ник..." /><br><br>
+<div id="messages"></div>
+
+<textarea id="messageInput" rows="4" cols="50" placeholder="Введите ваше сообщение..."></textarea><br>
+<button id="sendButton">Отправить</button>
+<button id="downloadButton">Скачать лог сообщений</button>
+<div id="errorMessage" class="error"></div>
+
+<script>
+    const messagesDiv = document.getElementById('messages');
+    const messageInput = document.getElementById('messageInput');
+    const nicknameInput = document.getElementById('nicknameInput');
+    const sendButton = document.getElementById('sendButton');
+    const downloadButton = document.getElementById('downloadButton');
+    const errorMessageDiv = document.getElementById('errorMessage');
+
+    let logMessages = []; // Массив для хранения логов сообщений
+    let messageCount = 0; // Счетчик сообщений
+    let firstMessageTime = null; // Время первого сообщения
+
+    // Массив запрещенных слов
+    const forbiddenWords = [
+        "пон", "сво", "долларов в день", "claim nft", "заработка", 
+        "найк про", "деанοн", "пикми", "дoкc", "1488", "сосал", "хохлы", "хохол", "русня", "орк", "орки", "мать шлюха", "босс кфс"
+    ];
+
+    sendButton.addEventListener('click', () => {
+        const messageText = messageInput.value.trim();
+        const nickname = nicknameInput.value.trim() || "Аноним"; // Если ник не введен, использовать "Аноним"
+        
+        if (messageText) {
+            // Проверка на наличие запрещенных слов
+            if (containsForbiddenWords(messageText)) {
+                showError("Ваше сообщение содержит запрещенные слова.");
+                return;
+            }
+
+            const currentTime = Date.now();
+
+            // Инициализация времени первого сообщения
+            if (firstMessageTime === null) {
+                firstMessageTime = currentTime;
+            }
+
+            // Проверка на лимит сообщений
+            if (currentTime - firstMessageTime <= 15000) {
+                if (messageCount < 3) {
+                    logMessage(nickname, messageText, currentTime);
+                } else {
+                    showError("Вы достигли лимита в 3 сообщения за 15 секунд.");
+                }
+            } else {
+                // Сброс счетчика и времени, если прошло больше 15 секунд
+                firstMessageTime = currentTime;
+                messageCount = 0;
+                logMessage(nickname, messageText, currentTime);
+            }
+        }
+    });
+
+    function containsForbiddenWords(message) {
+        return forbiddenWords.some(word => message.toLowerCase().includes(word));
+    }
+
+    function logMessage(nickname, messageText, currentTime) {
+        const timestamp = new Date(currentTime).toLocaleString(); // Получаем текущее время
+        const message = `${nickname}: ${messageText} (${timestamp})`;
+        logMessages.push(message); // Добавляем сообщение в лог
+
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message');
+        messageDiv.textContent = message; // Отображаем сообщение
+        messagesDiv.appendChild(messageDiv);
+        messageInput.value = ''; // Очистка поля ввода
+        messagesDiv.scrollTop = messagesDiv.scrollHeight; // Прокрутка вниз
+
+        messageCount++; // Увеличиваем счетчик сообщений
+        errorMessageDiv.textContent = ""; // Очищаем сообщение об ошибке
+    }
+
+    function showError(message) {
+        errorMessageDiv.textContent = message;
+    }
+
+    downloadButton.addEventListener('click', () => {
+        const blob = new Blob([logMessages.join('\n')], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'forum_log.txt'; // Имя файла для скачивания
+        document.body.appendChild(a);
+        a.click(); // Имитируем клик для скачивания
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url); // Освобождаем память
+    });
+</script>
+
+</body>
+</html>
+
+Найти еще
